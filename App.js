@@ -1,25 +1,37 @@
-
-import { setStatusBarNetworkActivityIndicatorVisible } from "expo-status-bar"
-import React, {useState, useEffect} from "react"
-import { StyleSheet, View, Text, Dimensions, TouchableWithoutFeedback } from 'react-native'
+import React, {useState, useEffect, useRef} from 'react'
+import { StyleSheet, View, Text, ImageBackground, Dimensions, TouchableWithoutFeedback, Animated, Button } from 'react-native'
 import Bird from './components/Bird'
-import Obstacles from "./components/Obstacles"
+import Obstacles from './components/Obstacles'
 
 
 export default function App() {
 
+  // ---  STATE AND VARIABLES ---- //
+
+  // CALIBRATION
+  const screenWidth = Dimensions.get("screen").width
+  const screenHeight= Dimensions.get("screen").height
+
+  // GAME
   const [isGameOver, setIsGameOver] = useState(false)
   const [score, setScore]=useState(0)
 
-
-  const screenWidth = Dimensions.get("screen").width
-  const screenHeight= Dimensions.get("screen").height
-  
-  //precisely bottom left of bird component
-  const birdLeft = screenWidth / 2
+  // BIRD LOCATION
+  const birdLeft = screenWidth / 2 //bird is always same on horizontal axis
   const [birdBottom, setBirdBottom] = useState(screenHeight / 2)
+
+  // GAME PHYSICS
   const gravity = 3
-  let gameTimerId, obstaclesLeftTimerId, obstaclesLeftTimerIdTwo
+  let gravityTimerId
+
+  // OBSTACLES
+  const[obstaclesLeft, setObstaclesLeft] = useState(screenWidth) //so starts off the page
+  const[obstaclesLeftTwo, setObstaclesLeftTwo] = useState(screenWidth + screenWidth/2 +30) 
+  const obstacleWidth = 60
+  const obstacleHeight = 300
+  const gap = 200 // gap between obstacles
+  let obstacleOneTimerId, obstacleTwoTimerId;
+
 
 
   //randomise obstacles heights 
@@ -27,53 +39,50 @@ export default function App() {
   const [obstaclesNegHeight, setObstaclesNegHeight]=useState(0)
   const [obstaclesNegHeightTwo, setObstaclesNegHeightTwo]=useState(0)
 
-  //start bird falling
+
+  // --- FUNCTIONS --- //
+
+  // GRAVITY - START BIRD FALLING
   useEffect(()=>{
     if(birdBottom > 0){
-       gameTimerId = setInterval(()=>{
+      gravityTimerId = setInterval(()=>{
           setBirdBottom(birdBottom => birdBottom - gravity)
        }, 30) //30ms
 
     return ()=>{
-      clearInterval(gameTimerId)
+      clearInterval(gravityTimerId)
+        }
       }
-    }
-  },[birdBottom])
+    }, [birdBottom])
 
-  //start obstacles scrolling
-  const[obstaclesLeft, setObstaclesLeft] = useState(screenWidth) //so starts off the page
-  
-  const obstacleWidth = 60
-  const obstacleHeight = 300
-  const gap = 200
-  
+  // OBSTACLE 1
   useEffect(()=>{
-    if(obstaclesLeft>-obstacleWidth){  //obstaclewidth so object disapeares
-      obstaclesLeftTimerId = setInterval(()=>{
-        setObstaclesLeft(obstaclesLeft => obstaclesLeft - 5)
+    if(obstaclesLeft >- obstacleWidth){  
+      obstacleOneTimerId = setInterval(()=>{
+        setObstaclesLeft(obstaclesLeft => obstaclesLeft - 5) //move it to the left
       },30)
-      return()=>{
-        clearInterval(obstaclesLeftTimerId)
+
+    return()=>{
+      clearInterval(obstacleOneTimerId)
       }
     } 
     else {
+      // obstacle has been cleared, update score and reset obstacle 1 with new randomised height
       setObstaclesLeft(screenWidth)
       setObstaclesNegHeight(- Math.random()*100)
       setScore(score => score+1)
     }
   },[obstaclesLeft])
 
-  //start second obstacle
-
-  const[obstaclesLeftTwo, setObstaclesLeftTwo] = useState(screenWidth + screenWidth/2 +30) 
-
+  //OBSTACLE 2
   useEffect(()=>{
-    if(obstaclesLeftTwo>-obstacleWidth){  //obstaclewidth so object disapeares
-      obstaclesLeftTimerIdTwo = setInterval(()=>{
+    if(obstaclesLeftTwo>-obstacleWidth){  //if obstacle is still on screen
+      obstacleTwoTimerId = setInterval(()=>{
         setObstaclesLeftTwo(obstaclesLeftTwo => obstaclesLeftTwo - 5)
       },30)
+
       return()=>{
-        clearInterval(obstaclesLeftTimerIdTwo)
+        clearInterval(obstacleTwoTimerId)
       }
     } 
     else {
@@ -84,34 +93,31 @@ export default function App() {
   },[obstaclesLeftTwo])
 
 
-  //check for collisons
-
+  // CHECK FOR COLLISONS
   useEffect(()=>{
     if(
-    ((birdBottom < (obstaclesNegHeight + obstacleHeight + 30) 
-    || birdBottom > (obstaclesNegHeight + obstacleHeight + gap -30)) 
-    && (obstaclesLeft > screenWidth/2 -30 
-    && obstaclesLeft < screenWidth/2 + 30))
-    || 
+      ((birdBottom < (obstaclesNegHeight + obstacleHeight + 30) 
+        || birdBottom > (obstaclesNegHeight + obstacleHeight + gap -30)) 
+        && (obstaclesLeft > screenWidth/2 -30 
+        && obstaclesLeft < screenWidth/2 + 30))
+      || 
     ((birdBottom < (obstaclesNegHeightTwo + obstacleHeight + 30) 
-    || birdBottom > (obstaclesNegHeightTwo + obstacleHeight + gap -30)) 
-    && (obstaclesLeftTwo> screenWidth/2 -30 
-    && obstaclesLeftTwo < screenWidth/2 + 30)
+      || birdBottom > (obstaclesNegHeightTwo + obstacleHeight + gap -30)) 
+      && (obstaclesLeftTwo> screenWidth/2 -30 
+      && obstaclesLeftTwo < screenWidth/2 + 30)
     ))
     {
       console.log("game over")
       gameOver()
-      
     }
-    
   })
 
 
 
   const gameOver = () => {
     clearInterval(gameTimerId)
-    clearInterval(obstaclesLeftTimerId)
-    clearInterval(obstaclesLeftTimerIdTwo)
+    clearInterval(obstacleOneTimerId)
+    clearInterval(obstacleTwoTimerIdTwo)
     setIsGameOver(true)
   }
 
@@ -122,14 +128,22 @@ export default function App() {
     }
   }
 
+
   return (
-  <TouchableWithoutFeedback onPress={jump}> 
+  <TouchableWithoutFeedback > 
   <View style={styles.container}>
+  <ImageBackground source={require('./assets/flappy-bird-background-2.jpg')}  style={{
+    height: "100%",
+    width: '100%',
+  }}  >
+
     {isGameOver && <Text>{score}</Text>}
+  
       <Bird 
-        birdBottom={birdBottom}
-        birdLeft={birdLeft}
-        />
+        birdBottom = {birdBottom}
+        birdLeft = {birdLeft}
+      
+      />
       <Obstacles
         obstaclesLeft={obstaclesLeft}
         obstacleWidth={obstacleWidth}
@@ -146,9 +160,9 @@ export default function App() {
         gap={gap}
         color={"yellow"}
       />
+      </ImageBackground>
     </View>
-  </TouchableWithoutFeedback>
-    
+  </TouchableWithoutFeedback>  
   );
 }
 
@@ -156,7 +170,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+    alignItems: "center",
+    justifyContent: 'center'
+  }
+})

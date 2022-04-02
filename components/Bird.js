@@ -1,5 +1,5 @@
 import React from "react"
-import {Stylesheet, Text, View} from 'react-native'
+import {Stylesheet, Text, Animated, View} from 'react-native'
 
 
 const Bird = ({birdBottom, birdLeft}) =>{
@@ -8,15 +8,15 @@ const Bird = ({birdBottom, birdLeft}) =>{
     const birdHeight = 60
 
     return (
-        <View style = {{
-            position: "absolute",
-            backgroundColor: 'blue',
-            width: 50,
-            height: 60,
-            left: birdLeft - (birdWidth/2), //to centralise the bird view
-            bottom: birdBottom - (birdHeight/2)
-        }}>
-
+        <View 
+            style = {[{
+                position: "absolute",
+                backgroundColor: 'blue',
+                width: birdWidth,
+                height: birdHeight,
+                left: birdLeft - (birdWidth/2), //to centralise the bird view
+                bottom: birdBottom - (birdHeight/2),  //possibly delete last bit
+            }]}>
         </View>
     )
 }
